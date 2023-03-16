@@ -46,7 +46,7 @@ resource "aws_security_group_rule" "web_http_in"{
   
   }
 
-resource "aws_security_group_rule" "web_http_in"{
+resource "aws_security_group_rule" "web_https_in"{
   type        = "ingress"
   from_port   = 443
   to_port     = 443
