@@ -14,9 +14,23 @@ data "aws_ami" "app_ami" {
   owners = ["979382823631"] # Bitnami
 }
 
-data "aws_vpc" "default"{
-  default = true
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+
+  name = "dev"
+  cidr = "10.0.0.0/16"
+
+  azs             = ["ap-southeast-1"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  enable_nat_gateway = true
+
+  tags = {
+    Terraform = "true"
+    Environment = "dev"
+  }
 }
+
 resource "aws_instance" "web" {
   ami           = data.aws_ami.app_ami.id
   instance_type = var.instance_type
@@ -53,7 +67,7 @@ resource "aws_security_group_rule" "web_https_in"{
   protocol    = "tcp"
   cidr_blocks = ["0.0.0.0/0"]
 
-  security_group_id =aws_security_group.web.id
+  security_group_id = aws_security_group.web.id
   
   }
 
@@ -67,3 +81,16 @@ resource "aws_security_group_rule" "web_everything_out"{
   security_group_id =aws_security_group.web.id
   
   }
+
+  module "blog_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "4.13.0"
+
+  vpc_id  = module.vpc.public_subnets[0]
+
+  name    = "blog"
+  ingress_rules = ["https-443-tcp","http-80-tcp"]
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+  egress_rules = ["all-all"]
+  egress_cidr_blocks = ["0.0.0.0/0"]
+}
